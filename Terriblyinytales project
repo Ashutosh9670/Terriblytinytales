@@ -1,0 +1,92 @@
+import React, { useState } from "react";
+import Chart from "chart.js";
+import json2csv from "json2csv";
+import { saveAs } from "file-saver";
+
+function App() {
+  const [histogramData, setHistogramData] = useState(null);
+
+  const handleSubmit = () => {
+    fetch("https://www.terriblytinytales.com/test.txt")
+      .then((response) => response.text())
+      .then((data) => {
+        const words = data.split(/\s+/);
+        const frequency = {};
+        words.forEach((word) => {
+          if (frequency[word]) {
+            frequency[word]++;
+          } else {
+            frequency[word] = 1;
+          }
+        });
+        const sortedFrequency = Object.entries(frequency).sort(
+          (a, b) => b[1] - a[1]
+        );
+        const top20Words = sortedFrequency.slice(0, 20);
+        const histogramData = top20Words.reduce((acc, [word, frequency]) => {
+          acc[word] = frequency;
+          return acc;
+        }, {});
+        setHistogramData(histogramData);
+        const ctx = document.getElementById("myChart").getContext("2d");
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: Object.keys(histogramData),
+            datasets: [
+              {
+                label: "Frequency",
+                data: Object.values(histogramData),
+                backgroundColor: "rgba(255, 99, 132, 0.2)",
+                borderColor: "rgba(255, 99, 132, 1)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            scales: {
+              yAxes: [
+                {
+                  ticks: {
+                    beginAtZero: true,
+                  },
+                },
+              ],
+            },
+          },
+        });
+      });
+  };
+
+  const handleExport = () => {
+    const csvData = json2csv.parse(histogramData);
+    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8" });
+    saveAs(blob, "histogram.csv");
+  };
+
+  return (
+    <div>
+      <button onClick={handleSubmit}>Submit</button>
+      {histogramData && (
+        <div>
+          <canvas id="myChart"></canvas>
+          <button onClick={handleExport}>Export</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
+
+
+
+
+Explaination part :
+
+This is a React functional component that fetches data from a URL, processes the data to find the frequency of each word, and displays a bar chart of the top 20 most frequently occurring words. 
+The chart is created using the Chart.js library. The user can then export the frequency data as a CSV file using the json2csv and file-saver libraries.
+The component uses the useState hook to manage the histogram data and renders a "Submit" button. When the user clicks the button, it fetches the data from the URL, splits the text into individual words, and creates a frequency distribution using an object. 
+It then sorts the frequency distribution by frequency and selects the top 20 words. 
+It creates a new object with only the top 20 words and their frequency and sets it as the state.
+It then creates a bar chart using the selected library and displays it on the page, along with an "Export" button. When the user clicks the export button, it converts the histogram data to a CSV file using the json2csv library and prompts the user to download the file using the file-saver library.
